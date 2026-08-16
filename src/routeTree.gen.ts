@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RegistrationsRouteImport } from './routes/registrations'
 import { Route as SavedRouteImport } from './routes/saved'
@@ -17,11 +16,6 @@ import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
 import { Route as RegisterEventIdRouteImport } from './routes/register.$eventId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -54,7 +48,6 @@ const RegisterEventIdRoute = RegisterEventIdRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/registrations': typeof RegistrationsRoute
   '/saved': typeof SavedRoute
@@ -63,7 +56,6 @@ export interface FileRoutesByFullPath {
   '/events/': typeof EventsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/registrations': typeof RegistrationsRoute
   '/saved': typeof SavedRoute
@@ -73,7 +65,6 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/profile': typeof ProfileRoute
   '/registrations': typeof RegistrationsRoute
   '/saved': typeof SavedRoute
@@ -84,7 +75,6 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/profile'
     | '/registrations'
     | '/saved'
@@ -93,7 +83,6 @@ export interface FileRouteTypes {
     | '/events/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/profile'
     | '/registrations'
     | '/saved'
@@ -102,7 +91,6 @@ export interface FileRouteTypes {
     | '/events'
   id:
     | '__root__'
-    | '/'
     | '/profile'
     | '/registrations'
     | '/saved'
@@ -112,7 +100,6 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   ProfileRoute: typeof ProfileRoute
   RegistrationsRoute: typeof RegistrationsRoute
   SavedRoute: typeof SavedRoute
@@ -123,13 +110,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -176,7 +156,6 @@ declare module '@tanstack/react-router' {
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   ProfileRoute: ProfileRoute,
   RegistrationsRoute: RegistrationsRoute,
   SavedRoute: SavedRoute,
