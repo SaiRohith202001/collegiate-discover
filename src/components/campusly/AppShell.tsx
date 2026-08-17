@@ -17,7 +17,7 @@ const activeProps = {
 export function AppShell({ children }: { children: ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
-  const { isAdmin } = useAdmin();
+  const { isAdmin, authReady } = useAdmin();
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -71,7 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 >
                   {user?.avatarInitials ?? "U"}
                 </Link>
-                {isAdmin && (
+                {authReady && isAdmin && (
                   <Link
                     to="/admin/dashboard"
                     className="hidden rounded-full px-3 py-1.5 text-xs font-semibold text-primary ring-1 ring-primary/30 transition-colors hover:bg-brand-soft md:flex items-center gap-1.5"

@@ -12,6 +12,8 @@ import { adminService } from "@/services/adminService";
 import type { EventStat } from "@/types";
 
 interface AdminContextValue {
+  /** true only after AuthProvider has finished its initial session check */
+  authReady: boolean;
   isAdmin: boolean;
   eventStats: EventStat[];
   refreshStats: () => Promise<void>;
@@ -20,8 +22,8 @@ interface AdminContextValue {
 const AdminContext = createContext<AdminContextValue | null>(null);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const { user, ready: authReady } = useAuth();
+  const isAdmin = authReady && user?.role === "admin";
   const [eventStats, setEventStats] = useState<EventStat[]>([]);
 
   const refreshStats = useCallback(async () => {
@@ -30,7 +32,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const stats = await adminService.getStats();
       setEventStats(stats);
     } catch {
-      // silently ignore — user may not be admin yet
+      // silently ignore
     }
   }, [isAdmin]);
 
@@ -39,8 +41,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   }, [refreshStats]);
 
   const value = useMemo<AdminContextValue>(
-    () => ({ isAdmin, eventStats, refreshStats }),
-    [isAdmin, eventStats, refreshStats],
+    () => ({ authReady, isAdmin, eventStats, refreshStats }),
+    [authReady, isAdmin, eventStats, refreshStats],
   );
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;

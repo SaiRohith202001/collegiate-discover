@@ -17,15 +17,16 @@ export const Route = createFileRoute("/admin/dashboard")({
 });
 
 function AdminDashboardPage() {
-  const { isAdmin, eventStats, refreshStats } = useAdmin();
+  const { authReady, isAdmin, eventStats, refreshStats } = useAdmin();
   const { logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAdmin) {
+    // Only redirect once auth has resolved — avoids flash-redirect on initial load
+    if (authReady && !isAdmin) {
       void navigate({ to: "/login", search: { redirect: "/admin/dashboard" } });
     }
-  }, [isAdmin, navigate]);
+  }, [authReady, isAdmin, navigate]);
 
   // Poll every 10 seconds for live updates
   useEffect(() => {
@@ -34,6 +35,8 @@ function AdminDashboardPage() {
     return () => clearInterval(id);
   }, [isAdmin, refreshStats]);
 
+  // Show nothing while auth is resolving
+  if (!authReady) return null;
   if (!isAdmin) return null;
 
   const totalRegistered = eventStats.reduce((sum, s) => sum + s.total, 0);

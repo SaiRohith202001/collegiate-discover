@@ -24,7 +24,7 @@ type ScanResult =
   | null;
 
 function AdminScanPage() {
-  const { isAdmin, refreshStats } = useAdmin();
+  const { authReady, isAdmin, refreshStats } = useAdmin();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [scanning, setScanning] = useState(false);
@@ -32,15 +32,16 @@ function AdminScanPage() {
   const [value, setValue] = useState("");
 
   useEffect(() => {
-    if (!isAdmin) {
+    if (authReady && !isAdmin) {
       void navigate({ to: "/login", search: { redirect: "/admin/scan" } });
     }
-  }, [isAdmin, navigate]);
+  }, [authReady, isAdmin, navigate]);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, [result]);
 
+  if (!authReady) return null;
   if (!isAdmin) return null;
 
   async function handleScan(e: React.FormEvent) {
