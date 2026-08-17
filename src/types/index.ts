@@ -56,6 +56,12 @@ export interface Registration {
   teamMembers?: string[];
   status: "registered" | "cancelled";
   createdAt: string;
+  /** Base64 data URL of the entry QR code */
+  qrCode: string;
+  /** Whether the QR has been scanned at the entry point */
+  qrScanned: boolean;
+  /** ISO timestamp when QR was scanned, or null */
+  scannedAt: string | null;
 }
 
 export interface StudentProfile {
@@ -67,4 +73,12 @@ export interface StudentProfile {
   email: string;
   phone: string;
   avatarInitials: string;
+  role: "student" | "admin";
+}
+
+export interface EventStat {
+  eventId: string;
+  total: number;
+  scanned: number;
+  pending: number;
 }

@@ -12,6 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CampusProvider } from "@/hooks/useCampus";
+import { AuthProvider } from "@/hooks/useAuth";
+import { AdminProvider } from "@/hooks/useAdmin";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -82,7 +84,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "CAMPUSLY — Discover. Participate. Experience." },
       {
         name: "description",
-        content: "Everything happening on your campus, in one place. Discover and register for events.",
+        content:
+          "Everything happening on your campus, in one place. Discover and register for events.",
       },
       { property: "og:title", content: "CAMPUSLY — Campus events, in one place" },
       {
@@ -131,11 +134,15 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CampusProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <Toaster position="top-center" />
-      </CampusProvider>
+      <AuthProvider>
+        <AdminProvider>
+          <CampusProvider>
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <Outlet />
+            <Toaster position="top-center" />
+          </CampusProvider>
+        </AdminProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

@@ -11,6 +11,7 @@ import {
   Timer,
   UsersRound,
 } from "lucide-react";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppShell } from "@/components/campusly/AppShell";
 import { EventDetailSkeleton } from "@/components/campusly/Skeletons";
 import { SaveButton } from "@/components/campusly/SaveButton";
@@ -28,7 +29,9 @@ export const Route = createFileRoute("/events/$eventId")({
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Event unavailable — CAMPUSLY" }, { name: "robots", content: "noindex" }] };
+      return {
+        meta: [{ title: "Event unavailable — CAMPUSLY" }, { name: "robots", content: "noindex" }],
+      };
     }
     const { event } = loaderData;
     const description = `${event.subtitle} · ${formatLongDate(event.date)} · ${event.venue}`;
@@ -52,11 +55,13 @@ function EventDetailPage() {
   });
 
   return (
-    <AppShell>
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
-        {isPending || !data ? <EventDetailSkeleton /> : <EventDetail event={data} />}
-      </div>
-    </AppShell>
+    <AuthGuard>
+      <AppShell>
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
+          {isPending || !data ? <EventDetailSkeleton /> : <EventDetail event={data} />}
+        </div>
+      </AppShell>
+    </AuthGuard>
   );
 }
 
@@ -69,7 +74,11 @@ function EventDetail({ event }: { event: CampusEvent }) {
     { icon: Clock, label: "Time", value: event.time },
     { icon: MapPin, label: "Venue", value: event.venue },
     { icon: Building2, label: "Organized By", value: event.organizer },
-    { icon: Timer, label: "Registration Deadline", value: formatShortDate(event.registrationDeadline) },
+    {
+      icon: Timer,
+      label: "Registration Deadline",
+      value: formatShortDate(event.registrationDeadline),
+    },
     { icon: UsersRound, label: "Team Size", value: teamSizeLabel(event.teamSize) },
   ];
 
@@ -212,7 +221,11 @@ function RegisterCta({
     );
   }
   return (
-    <Button asChild size="lg" className={`rounded-full shadow-[var(--shadow-brand)] ${className ?? ""}`}>
+    <Button
+      asChild
+      size="lg"
+      className={`rounded-full shadow-[var(--shadow-brand)] ${className ?? ""}`}
+    >
       <Link to="/register/$eventId" params={{ eventId: event.id }}>
         Register Now
       </Link>

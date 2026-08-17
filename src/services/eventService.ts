@@ -42,11 +42,20 @@ export const eventService = {
     await delay();
     const search = query.search?.trim().toLowerCase() ?? "";
     return mockEvents
-      .filter((event) => (query.category && query.category !== "All" ? event.category === query.category : true))
+      .filter((event) =>
+        query.category && query.category !== "All" ? event.category === query.category : true,
+      )
       .filter((event) => matchesDateFilter(event, query.dateFilter ?? "any"))
       .filter((event) =>
         search
-          ? [event.title, event.subtitle, event.category, event.department, event.organizer, event.venue]
+          ? [
+              event.title,
+              event.subtitle,
+              event.category,
+              event.department,
+              event.organizer,
+              event.venue,
+            ]
               .join(" ")
               .toLowerCase()
               .includes(search)

@@ -1288,3 +1288,33 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Backend + MongoDB auth setup
+
+This project now includes an Express + MongoDB auth API with JWT access/refresh cookies.
+
+1. Copy env template and set secrets:
+
+```sh
+cp .env.example .env
+```
+
+Required vars:
+
+- `MONGODB_URI` (example: `mongodb://localhost:27017/campus_discover`)
+- `JWT_ACCESS_SECRET`
+- `JWT_REFRESH_SECRET`
+- `AUTH_SERVER_PORT` (default `5001`)
+- `VITE_API_BASE_URL` (default `http://localhost:5001/api`)
+
+2. Start backend:
+
+```sh
+npm run dev:backend
+```
+
+3. Start frontend:
+
+```sh
+npm run dev
+```

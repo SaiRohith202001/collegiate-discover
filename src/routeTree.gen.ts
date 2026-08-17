@@ -10,9 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RegistrationsRouteImport } from './routes/registrations'
 import { Route as SavedRouteImport } from './routes/saved'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
+import { Route as AdminScanRouteImport } from './routes/admin.scan'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
 import { Route as RegisterEventIdRouteImport } from './routes/register.$eventId'
@@ -20,6 +24,11 @@ import { Route as RegisterEventIdRouteImport } from './routes/register.$eventId'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -35,6 +44,21 @@ const RegistrationsRoute = RegistrationsRouteImport.update({
 const SavedRoute = SavedRouteImport.update({
   id: '/saved',
   path: '/saved',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDashboardRoute = AdminDashboardRouteImport.update({
+  id: '/admin/dashboard',
+  path: '/admin/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminScanRoute = AdminScanRouteImport.update({
+  id: '/admin/scan',
+  path: '/admin/scan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsIndexRoute = EventsIndexRouteImport.update({
@@ -55,18 +79,26 @@ const RegisterEventIdRoute = RegisterEventIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/registrations': typeof RegistrationsRoute
   '/saved': typeof SavedRoute
+  '/signup': typeof SignupRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/scan': typeof AdminScanRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/register/$eventId': typeof RegisterEventIdRoute
   '/events/': typeof EventsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/registrations': typeof RegistrationsRoute
   '/saved': typeof SavedRoute
+  '/signup': typeof SignupRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/scan': typeof AdminScanRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/register/$eventId': typeof RegisterEventIdRoute
   '/events': typeof EventsIndexRoute
@@ -74,9 +106,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/registrations': typeof RegistrationsRoute
   '/saved': typeof SavedRoute
+  '/signup': typeof SignupRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/scan': typeof AdminScanRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/register/$eventId': typeof RegisterEventIdRoute
   '/events/': typeof EventsIndexRoute
@@ -85,27 +121,39 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
     | '/profile'
     | '/registrations'
     | '/saved'
+    | '/signup'
+    | '/admin/dashboard'
+    | '/admin/scan'
     | '/events/$eventId'
     | '/register/$eventId'
     | '/events/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
     | '/profile'
     | '/registrations'
     | '/saved'
+    | '/signup'
+    | '/admin/dashboard'
+    | '/admin/scan'
     | '/events/$eventId'
     | '/register/$eventId'
     | '/events'
   id:
     | '__root__'
     | '/'
+    | '/login'
     | '/profile'
     | '/registrations'
     | '/saved'
+    | '/signup'
+    | '/admin/dashboard'
+    | '/admin/scan'
     | '/events/$eventId'
     | '/register/$eventId'
     | '/events/'
@@ -113,9 +161,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   RegistrationsRoute: typeof RegistrationsRoute
   SavedRoute: typeof SavedRoute
+  SignupRoute: typeof SignupRoute
+  AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminScanRoute: typeof AdminScanRoute
   EventsEventIdRoute: typeof EventsEventIdRoute
   RegisterEventIdRoute: typeof RegisterEventIdRoute
   EventsIndexRoute: typeof EventsIndexRoute
@@ -128,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -149,6 +208,27 @@ declare module '@tanstack/react-router' {
       path: '/saved'
       fullPath: '/saved'
       preLoaderRoute: typeof SavedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/dashboard': {
+      id: '/admin/dashboard'
+      path: '/admin/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/scan': {
+      id: '/admin/scan'
+      path: '/admin/scan'
+      fullPath: '/admin/scan'
+      preLoaderRoute: typeof AdminScanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events/': {
@@ -177,9 +257,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   RegistrationsRoute: RegistrationsRoute,
   SavedRoute: SavedRoute,
+  SignupRoute: SignupRoute,
+  AdminDashboardRoute: AdminDashboardRoute,
+  AdminScanRoute: AdminScanRoute,
   EventsEventIdRoute: EventsEventIdRoute,
   RegisterEventIdRoute: RegisterEventIdRoute,
   EventsIndexRoute: EventsIndexRoute,

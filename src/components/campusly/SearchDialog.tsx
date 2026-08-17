@@ -19,7 +19,14 @@ export function SearchDialog({
     if (!q) return [];
     return events
       .filter((event) =>
-        [event.title, event.subtitle, event.category, event.department, event.organizer, event.venue]
+        [
+          event.title,
+          event.subtitle,
+          event.category,
+          event.department,
+          event.organizer,
+          event.venue,
+        ]
           .join(" ")
           .toLowerCase()
           .includes(q),
@@ -29,9 +36,7 @@ export function SearchDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="top-24 max-w-xl translate-y-0 gap-0 overflow-hidden rounded-3xl p-0 sm:max-w-2xl"
-      >
+      <DialogContent className="top-24 max-w-xl translate-y-0 gap-0 overflow-hidden rounded-3xl p-0 sm:max-w-2xl">
         <DialogTitle className="sr-only">Search events</DialogTitle>
         <div className="flex items-center gap-3 border-b border-border px-5 py-4">
           <Search className="size-5 text-muted-foreground" />

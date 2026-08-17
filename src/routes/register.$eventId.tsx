@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { CalendarDays, CheckCircle2, Clock, MapPin, PartyPopper } from "lucide-react";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppShell } from "@/components/campusly/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { eventService } from "@/services/eventService";
 import { useCampus } from "@/hooks/useCampus";
-import { formatLongDate, teamSizeLabel } from "@/utils/format";
 import type { Registration } from "@/types";
+import { formatLongDate, teamSizeLabel } from "@/utils/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/register/$eventId")({
@@ -19,7 +20,12 @@ export const Route = createFileRoute("/register/$eventId")({
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Registration unavailable — CAMPUSLY" }, { name: "robots", content: "noindex" }] };
+      return {
+        meta: [
+          { title: "Registration unavailable — CAMPUSLY" },
+          { name: "robots", content: "noindex" },
+        ],
+      };
     }
     const title = `Register for ${loaderData.event.title} — CAMPUSLY`;
     const description = `Confirm your spot for ${loaderData.event.title} on ${formatLongDate(loaderData.event.date)}.`;
@@ -68,6 +74,8 @@ function RegisterPage() {
       });
       setCreated(registration);
       toast.success("Registration confirmed", { description: event.title });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Registration failed.");
     } finally {
       setSubmitting(false);
     }
@@ -91,9 +99,26 @@ function RegisterPage() {
             <Row label="Time" value={event.time} />
             <Row label="Venue" value={event.venue} />
             <div className="mt-4 rounded-2xl bg-brand-soft px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Registration ID</p>
-              <p className="font-display text-lg font-bold text-primary">{created.registrationId}</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Registration ID
+              </p>
+              <p className="font-display text-lg font-bold text-primary">
+                {created.registrationId}
+              </p>
             </div>
+            {created.qrCode && (
+              <div className="mt-4 flex flex-col items-center gap-2 border-t border-border pt-4">
+                <p className="text-sm font-medium text-muted-foreground">Your Entry QR Code</p>
+                <img
+                  src={created.qrCode}
+                  alt={`Entry QR for ${created.registrationId}`}
+                  className="size-44 rounded-xl border border-border bg-white p-2 shadow-sm"
+                />
+                <p className="text-center text-xs text-muted-foreground">
+                  Show this at the venue entrance. Single-use — cannot be reused after scanning.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -110,62 +135,69 @@ function RegisterPage() {
   }
 
   return (
-    <AppShell>
-      <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
-        <h1 className="text-2xl font-bold sm:text-3xl">Register for {event.title}</h1>
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <CalendarDays className="size-4 text-primary" />
-            {formatLongDate(event.date)}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Clock className="size-4 text-primary" />
-            {event.time}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <MapPin className="size-4 text-primary" />
-            {event.venue}
-          </span>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="mt-8 space-y-5 rounded-3xl bg-card p-6 shadow-[var(--shadow-card)] sm:p-8"
-        >
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Full Name" name="fullName" defaultValue={user.name} />
-            <Field label="Student ID / Roll Number" name="studentId" defaultValue={user.studentId} />
-            <Field label="Email" name="email" type="email" defaultValue={user.email} />
-            <Field label="Phone Number" name="phone" defaultValue={user.phone} />
-            <Field label="Department" name="department" defaultValue={user.department} />
-            <Field label="Year" name="year" defaultValue={user.year} />
+    <AuthGuard>
+      <AppShell>
+        <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
+          <h1 className="text-2xl font-bold sm:text-3xl">Register for {event.title}</h1>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="size-4 text-primary" />
+              {formatLongDate(event.date)}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="size-4 text-primary" />
+              {event.time}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <MapPin className="size-4 text-primary" />
+              {event.venue}
+            </span>
           </div>
 
-          {isTeamEvent && (
-            <div className="grid gap-5 border-t border-border pt-5 sm:grid-cols-2">
-              <Field label="Team Name" name="teamName" placeholder="e.g. Null Pointers" />
-              <Field
-                label={`Team Members (${teamSizeLabel(event.teamSize)})`}
-                name="teamMembers"
-                placeholder="Comma separated names"
-              />
-            </div>
-          )}
-
-          <Button
-            type="submit"
-            size="lg"
-            disabled={submitting}
-            className="w-full rounded-full shadow-[var(--shadow-brand)]"
+          <form
+            onSubmit={handleSubmit}
+            className="mt-8 space-y-5 rounded-3xl bg-card p-6 shadow-[var(--shadow-card)] sm:p-8"
           >
-            {submitting ? "Confirming..." : "Confirm Registration"}
-          </Button>
-          <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <CheckCircle2 className="size-3.5 text-primary" /> Free registration · No payment required
-          </p>
-        </form>
-      </div>
-    </AppShell>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="Full Name" name="fullName" defaultValue={user?.name ?? ""} />
+              <Field
+                label="Student ID / Roll Number"
+                name="studentId"
+                defaultValue={user?.studentId ?? ""}
+              />
+              <Field label="Email" name="email" type="email" defaultValue={user?.email ?? ""} />
+              <Field label="Phone Number" name="phone" defaultValue={user?.phone ?? ""} />
+              <Field label="Department" name="department" defaultValue={user?.department ?? ""} />
+              <Field label="Year" name="year" defaultValue={user?.year ?? ""} />
+            </div>
+
+            {isTeamEvent && (
+              <div className="grid gap-5 border-t border-border pt-5 sm:grid-cols-2">
+                <Field label="Team Name" name="teamName" placeholder="e.g. Null Pointers" />
+                <Field
+                  label={`Team Members (${teamSizeLabel(event.teamSize)})`}
+                  name="teamMembers"
+                  placeholder="Comma separated names"
+                />
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              size="lg"
+              disabled={submitting}
+              className="w-full rounded-full shadow-[var(--shadow-brand)]"
+            >
+              {submitting ? "Confirming..." : "Confirm Registration"}
+            </Button>
+            <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <CheckCircle2 className="size-3.5 text-primary" /> Free registration · No payment
+              required
+            </p>
+          </form>
+        </div>
+      </AppShell>
+    </AuthGuard>
   );
 }
 
