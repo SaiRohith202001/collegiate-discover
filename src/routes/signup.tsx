@@ -14,7 +14,9 @@ const signupSchema = z.object({
   studentId: z.string().min(2, "Student ID is required."),
   department: z.string().min(2, "Department is required."),
   year: z.string().min(1, "Year is required."),
-  phone: z.string().min(8, "Phone number is required."),
+  phone: z
+    .string()
+    .regex(/^\d{10}$/, "Phone number must be exactly 10 digits."),
   email: z.string().email("Enter a valid email."),
   password: z
     .string()
@@ -164,10 +166,34 @@ function Field({
   register: ReturnType<typeof useForm<SignupValues>>["register"];
   error?: string;
 }) {
+  const isPhoneField = name === "phone";
+  
   return (
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
-      <Input id={name} type={type} {...register(name)} />
+      {isPhoneField ? (
+        <div className="flex items-center border border-input rounded-md overflow-hidden">
+          <span className="px-3 py-2 bg-muted text-sm font-medium text-muted-foreground">
+            +91
+          </span>
+          <Input
+            id={name}
+            type="tel"
+            placeholder="10 digit number"
+            inputMode="numeric"
+            maxLength={10}
+            {...register(name, {
+              onChange: (e) => {
+                // Allow only digits
+                e.target.value = e.target.value.replace(/[^\d]/g, "");
+              },
+            })}
+            className="border-0 focus-visible:ring-0"
+          />
+        </div>
+      ) : (
+        <Input id={name} type={type} {...register(name)} />
+      )}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );

@@ -71,7 +71,7 @@ router.post("/signup", async (req, res, next) => {
       studentId: payload.studentId,
       department: payload.department,
       year: payload.year,
-      phone: payload.phone,
+      phone: `+91${payload.phone}`,
       avatarInitials: toInitials(payload.name),
       savedEventIds: [],
       refreshTokens: [],

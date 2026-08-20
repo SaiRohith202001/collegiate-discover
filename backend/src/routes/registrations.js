@@ -66,7 +66,7 @@ router.post("/", async (req, res, next) => {
       fullName: payload.fullName,
       studentId: payload.studentId,
       email: payload.email.toLowerCase(),
-      phone: payload.phone,
+      phone: `+91${payload.phone}`,
       department: payload.department,
       year: payload.year,
       teamName: payload.teamName || "",

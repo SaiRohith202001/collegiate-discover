@@ -15,7 +15,7 @@ export const signupSchema = z.object({
   studentId: trimmed.min(2).max(30),
   department: trimmed.min(2).max(120),
   year: trimmed.min(1).max(40),
-  phone: trimmed.min(8).max(30),
+  phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits."),
 });
 
 export const loginSchema = z.object({
@@ -28,7 +28,7 @@ export const registrationSchema = z.object({
   fullName: trimmed.min(2).max(80),
   studentId: trimmed.min(2).max(30),
   email: trimmed.email().max(320),
-  phone: trimmed.min(8).max(30),
+  phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits."),
   department: trimmed.min(2).max(120),
   year: trimmed.min(1).max(40),
   teamName: trimmed.max(120).optional().or(z.literal("")),
