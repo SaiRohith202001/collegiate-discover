@@ -1,0 +1,18 @@
+# Root .dockerignore — applies to the frontend (TanStack Start app) build context.
+node_modules
+.output
+.tanstack
+.wrangler
+dist
+dist-ssr
+*.log
+npm-debug.log*
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.vscode
+.idea
+CLASSROOM_DEMO_GUIDE.md
+MICROSERVICE_EXPLANATION.md

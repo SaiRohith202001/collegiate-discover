@@ -1,0 +1,124 @@
+# Docker Compose file for the Campusly local development stack.
+#
+# Services:
+#   mongodb              - shared MongoDB instance (data-only, not exposed publicly)
+#   event-service         - Node microservice owning the `event_db` database
+#   registration-service  - Node microservice owning the `registration_db` database,
+#                           calls event-service over HTTP (API-level access, no shared DB)
+#   frontend               - TanStack Start (React SSR) app, calls both services
+#                           from the browser via published host ports
+#
+# All services share a dedicated bridge network ("campusly-network") so they can
+# resolve each other by service name (e.g. "mongodb", "event-service").
+
+networks:
+  campusly-network:
+    driver: bridge
+
+volumes:
+  # Persists MongoDB data across `docker compose down` / container restarts.
+  mongodb-data:
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: campusly-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - campusly-network
+    # No `ports:` mapping — MongoDB is only reachable from other containers on
+    # campusly-network, never from the host or the public internet.
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  event-service:
+    build:
+      context: .
+      dockerfile: event-service/Dockerfile
+    container_name: campusly-event-service
+    restart: unless-stopped
+    environment:
+      EVENT_SERVICE_PORT: ${EVENT_SERVICE_PORT}
+      # "mongodb" resolves via Docker's internal DNS to the mongodb container above.
+      MONGODB_URI: ${EVENT_SERVICE_MONGODB_URI}
+      MONGODB_DB_NAME: ${EVENT_SERVICE_MONGODB_DB_NAME}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - campusly-network
+    ports:
+      # Published so the browser (running on the host) can call this service directly.
+      - "${EVENT_SERVICE_PORT}:${EVENT_SERVICE_PORT}"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+(process.env.EVENT_SERVICE_PORT||4300)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  registration-service:
+    build:
+      context: .
+      dockerfile: registration-service/Dockerfile
+    container_name: campusly-registration-service
+    restart: unless-stopped
+    environment:
+      REGISTRATION_SERVICE_PORT: ${REGISTRATION_SERVICE_PORT}
+      MONGODB_URI: ${REGISTRATION_SERVICE_MONGODB_URI}
+      MONGODB_DB_NAME: ${REGISTRATION_SERVICE_MONGODB_DB_NAME}
+      # Server-to-server call stays inside the Docker network via the service name.
+      EVENT_SERVICE_URL: ${REGISTRATION_EVENT_SERVICE_URL}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      event-service:
+        condition: service_healthy
+    networks:
+      - campusly-network
+    ports:
+      - "${REGISTRATION_SERVICE_PORT}:${REGISTRATION_SERVICE_PORT}"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+(process.env.REGISTRATION_SERVICE_PORT||4100)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Baked into the client bundle at build time — must be host-reachable
+        # URLs since the calls happen in the user's browser.
+        VITE_REGISTRATION_SERVICE_URL: ${VITE_REGISTRATION_SERVICE_URL}
+        VITE_EVENT_SERVICE_URL: ${VITE_EVENT_SERVICE_URL}
+    container_name: campusly-frontend
+    restart: unless-stopped
+    environment:
+      PORT: ${FRONTEND_PORT}
+    depends_on:
+      event-service:
+        condition: service_healthy
+      registration-service:
+        condition: service_healthy
+    networks:
+      - campusly-network
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3000)).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

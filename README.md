@@ -1354,3 +1354,147 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Docker Compose deployment
+
+Campusly currently runs as a TanStack Start React application plus two
+MongoDB-backed Node microservices:
+
+```text
+Browser
+  |
+  +--> frontend (TanStack Start SSR, host port 3000)
+  +--> event-service (host port 4300) --> mongodb:event_db
+  +--> registration-service (host port 4100) --> mongodb:registration_db
+                                                   |
+                                             mongodb-data volume
+```
+
+The Event Service owns `event_db`. The Registration Service owns
+`registration_db` and calls the Event Service over HTTP for event validation;
+the services never read each other's MongoDB collections directly. All
+containers communicate over the dedicated `campusly-network` bridge network.
+
+### Docker files
+
+- `Dockerfile`: multi-stage production image for the TanStack Start frontend/SSR
+  server. It builds with the Node Nitro preset and runs `.output/server/index.mjs`.
+- `event-service/Dockerfile`: production Node image for the Event Service.
+- `registration-service/Dockerfile`: production Node image for the Registration
+  Service.
+- `docker-compose.yml`: frontend, both microservices, MongoDB, health checks,
+  restart policies, network, and persistent volume.
+- `.dockerignore`, `event-service/.dockerignore`, and
+  `registration-service/.dockerignore`: keep build contexts small and prevent
+  local dependencies/data from entering images.
+
+### Docker setup
+
+Copy the example environment file and change credentials for any shared
+environment:
+
+```sh
+copy .env.example .env
+docker compose up -d
+```
+
+On PowerShell, `Copy-Item .env.example .env` is equivalent. The frontend is
+available at <http://localhost:3000>.
+
+The first startup downloads `mongo:7` and builds the three application images.
+Seed the Event Service database once after the services are healthy:
+
+```sh
+docker compose exec event-service node event-service/seed-events.mjs
+```
+
+Useful commands:
+
+```sh
+# Stop containers (keep MongoDB data)
+docker compose down
+
+# Stop containers and delete the MongoDB volume (destructive)
+docker compose down -v
+
+# Follow all logs, or only one service
+docker compose logs -f
+docker compose logs -f frontend
+docker compose logs -f event-service
+docker compose logs -f registration-service
+
+# List containers and health state
+docker compose ps
+
+# Inspect the dedicated network and persistent volume
+docker network inspect pasted-text-processing_campusly-network
+docker volume inspect pasted-text-processing_mongodb-data
+
+# Open a shell in an application container
+docker compose exec frontend sh
+docker compose exec event-service sh
+docker compose exec registration-service sh
+
+# Check service endpoints from the host
+curl http://localhost:4300/health
+curl http://localhost:4100/health
+```
+
+### Environment variables and networking
+
+`.env.example` documents every required variable. MongoDB credentials are
+passed to the MongoDB container and are used in the service-specific
+`MONGODB_URI` values. The backend containers use `mongodb` as the hostname,
+which is the Compose service name; `localhost` inside a container would refer
+to that same container, not MongoDB.
+
+The Registration Service uses `http://event-service:4300` for its internal
+server-to-server call. The browser-facing `VITE_EVENT_SERVICE_URL` and
+`VITE_REGISTRATION_SERVICE_URL` values intentionally use `localhost` and the
+published ports because Vite embeds them into the client bundle and browser
+requests originate outside the Docker network.
+
+MongoDB does not publish a host port. It is reachable only by containers on
+`campusly-network`. Its named `mongodb-data` volume persists databases across
+container restarts and ordinary `docker compose down`.
+
+### Troubleshooting
+
+**Frontend cannot reach a microservice**
+
+1. Run `docker compose ps` and confirm Event Service and Registration Service
+   are healthy.
+2. Test `http://localhost:4300/health` and `http://localhost:4100/health` in
+   the host browser or with `curl`.
+3. Verify `VITE_EVENT_SERVICE_URL` and
+   `VITE_REGISTRATION_SERVICE_URL` in `.env`.
+4. Rebuild after changing either Vite variable:
+
+   ```sh
+   docker compose build frontend
+   docker compose up -d frontend
+   ```
+
+**Backend cannot reach MongoDB**
+
+1. Confirm `docker compose ps` shows `mongodb` as healthy.
+2. Confirm backend `MONGODB_URI` values use `mongodb`, not `localhost`.
+3. Review logs:
+
+   ```sh
+   docker compose logs mongodb
+   docker compose logs event-service
+   docker compose logs registration-service
+   ```
+
+4. Restart in dependency order if needed:
+
+   ```sh
+   docker compose down
+   docker compose up -d mongodb
+   docker compose up -d event-service registration-service frontend
+   ```
+
+If ports 3000, 4100, or 4300 are already in use, stop the old local
+development processes or change the corresponding host-side values in `.env`
+before running Compose. The container ports remain the service ports.
