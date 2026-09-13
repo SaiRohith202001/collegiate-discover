@@ -1152,7 +1152,73 @@ Notification Service
 
 Databases / Messaging
 
-DO NOT implement microservices now.
+# Microservices Data Tier & Inter-Service Communication (MongoDB)
+
+On this development branch, the application is decomposed into microservices with isolated **MongoDB** data tiers:
+
+1. **Event Service** (`http://localhost:4300`) -> MongoDB `event_db`
+2. **Registration Service** (`http://localhost:4100`) -> MongoDB `registration_db`
+
+**Architecture Overview**
+
+```text
+Main Application (Port 8081)
+      │
+      │ HTTP /events              │ HTTP /registrations
+      ▼                           ▼
+Event Service (Port 4300)    Registration Service (Port 4100)
+      │                           │       │
+      ▼                           │       │ HTTP /events/:id (API-Level Access)
+MongoDB (event_db)                │       └──────────────▶ Event Service API
+                                   ▼
+                          MongoDB (registration_db)
+```
+
+### Key Architectural Concepts for Classroom Teaching:
+- **Data Isolation**: Event Service owns `event_db`; Registration Service owns `registration_db`. Neither service connects to the other's database directly.
+- **API-Level DB Access**: When a student registers for an event, Registration Service does **NOT** query `event_db` directly. It calls Event Service's HTTP API (`GET /events/:id`) to fetch and validate event details (title, venue, date), then stores a snapshot of that data alongside the registration in `registration_db`.
+- **Fail-Safe Validation**: If the requested event doesn't exist in Event Service, Registration Service rejects the registration with `404`. If Event Service is unreachable, it returns `502 Bad Gateway` — demonstrating real-world service dependency failure handling.
+
+## Run the Microservices Demonstration
+
+In Terminal 1 (Event Service):
+```powershell
+# Seed the event catalog into MongoDB (first time only)
+npm run event-seed
+
+$env:EVENT_SERVICE_PORT="4300"
+$env:MONGODB_URI="mongodb://127.0.0.1:27017"
+npm run event-service
+```
+
+In Terminal 2 (Registration Service):
+```powershell
+$env:REGISTRATION_SERVICE_PORT="4100"
+$env:MONGODB_URI="mongodb://127.0.0.1:27017"
+$env:EVENT_SERVICE_URL="http://localhost:4300"
+npm run registration-service
+```
+
+In Terminal 3 (Frontend):
+```powershell
+$env:VITE_REGISTRATION_SERVICE_URL="http://localhost:4100"
+$env:VITE_EVENT_SERVICE_URL="http://localhost:4300"
+npm run dev -- --port 8081
+```
+
+## Microservice Migration & Seed Commands
+
+```powershell
+# Seed / re-seed the Event Service's MongoDB database
+npm run event-seed
+
+# Migrate local/JSON export into Registration Service MongoDB
+npm run registration-migrate
+```
+
+To run the original version, switch to `monolithic` and use its normal
+development command. To demonstrate the new version, run the service and
+frontend commands above, register an event, then query the MongoDB collections.
 
 This information is only provided so the frontend architecture remains compatible with future development.
 

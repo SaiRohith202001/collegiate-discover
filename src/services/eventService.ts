@@ -2,11 +2,13 @@ import { events as mockEvents } from "@/data/events";
 import type { CampusEvent, EventCategory } from "@/types";
 
 /**
- * Mock event service.
- * Swap the bodies for REST calls later — the signatures stay the same.
+ * Event service client.
+ * Uses the Event Microservice (MongoDB-backed) when VITE_EVENT_SERVICE_URL is set,
+ * otherwise falls back to local mock data for offline UI development.
  */
 
 const delay = (ms = 260) => new Promise((resolve) => setTimeout(resolve, ms));
+const apiUrl = import.meta.env.VITE_EVENT_SERVICE_URL?.replace(/\/$/, "");
 
 export type DateFilter = "any" | "today" | "tomorrow" | "week" | "month";
 
@@ -37,8 +39,22 @@ function byDate(a: CampusEvent, b: CampusEvent) {
   return a.date.localeCompare(b.date);
 }
 
+async function fetchEventsFromService(query: EventQuery): Promise<CampusEvent[]> {
+  const params = new URLSearchParams();
+  if (query.category && query.category !== "All") params.set("category", query.category);
+  if (query.search) params.set("search", query.search);
+  const qs = params.toString();
+  const response = await fetch(`${apiUrl}/events${qs ? `?${qs}` : ""}`);
+  if (!response.ok) throw new Error("Event Service could not load events");
+  const docs = (await response.json()) as CampusEvent[];
+  return docs.filter((event) => matchesDateFilter(event, query.dateFilter ?? "any"));
+}
+
 export const eventService = {
   async getEvents(query: EventQuery = {}): Promise<CampusEvent[]> {
+    if (apiUrl) {
+      return fetchEventsFromService(query);
+    }
     await delay();
     const search = query.search?.trim().toLowerCase() ?? "";
     return mockEvents
@@ -56,21 +72,39 @@ export const eventService = {
   },
 
   async getEventById(id: string): Promise<CampusEvent | null> {
+    if (apiUrl) {
+      const response = await fetch(`${apiUrl}/events/${encodeURIComponent(id)}`);
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error("Event Service could not load the event");
+      return (await response.json()) as CampusEvent;
+    }
     await delay(180);
     return mockEvents.find((event) => event.id === id) ?? null;
   },
 
   async getFeaturedEvent(): Promise<CampusEvent> {
+    if (apiUrl) {
+      const events = await fetchEventsFromService({});
+      return events.find((event) => event.featured) ?? events[0]!;
+    }
     await delay(120);
     return mockEvents.find((event) => event.featured) ?? mockEvents[0]!;
   },
 
   async getTrendingEvents(): Promise<CampusEvent[]> {
+    if (apiUrl) {
+      const events = await fetchEventsFromService({});
+      return events.filter((event) => event.trending && event.status === "upcoming").sort(byDate);
+    }
     await delay(200);
     return mockEvents.filter((event) => event.trending && event.status === "upcoming").sort(byDate);
   },
 
   async getUpcomingEvents(dateFilter: DateFilter = "any"): Promise<CampusEvent[]> {
+    if (apiUrl) {
+      const events = await fetchEventsFromService({ dateFilter });
+      return events.filter((event) => event.status === "upcoming").sort(byDate);
+    }
     await delay(200);
     return mockEvents
       .filter((event) => event.status === "upcoming")

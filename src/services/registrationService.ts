@@ -1,14 +1,12 @@
 import type { Registration } from "@/types";
 
-/**
- * Mock registration service backed by localStorage.
- * Replace with REST calls later; the UI only uses these methods.
- */
+/** Registration API client with a localStorage fallback for offline UI development. */
 
 const STORAGE_KEY = "campusly.registrations";
 const SAVED_KEY = "campusly.saved";
 
 const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
+const apiUrl = import.meta.env.VITE_REGISTRATION_SERVICE_URL?.replace(/\/$/, "");
 
 function read<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -45,11 +43,28 @@ function makeRegistrationId(department: string) {
 
 export const registrationService = {
   async getRegistrations(): Promise<Registration[]> {
+    if (apiUrl) {
+      const response = await fetch(`${apiUrl}/registrations`);
+      if (!response.ok) throw new Error("Registration Service could not load registrations");
+      return (await response.json()) as Registration[];
+    }
     await delay(220);
     return read<Registration[]>(STORAGE_KEY, []);
   },
 
   async createRegistration(input: RegistrationInput): Promise<Registration> {
+    if (apiUrl) {
+      const response = await fetch(`${apiUrl}/registrations`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error ?? "Registration Service rejected the registration");
+      }
+      return (await response.json()) as Registration;
+    }
     await delay();
     const registration: Registration = {
       id: crypto.randomUUID(),
@@ -64,6 +79,11 @@ export const registrationService = {
   },
 
   async cancelRegistration(id: string): Promise<void> {
+    if (apiUrl) {
+      const response = await fetch(`${apiUrl}/registrations/${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Registration Service could not cancel the registration");
+      return;
+    }
     await delay(250);
     const all = read<Registration[]>(STORAGE_KEY, []);
     write(
