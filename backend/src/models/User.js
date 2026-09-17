@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, required: true, trim: true, maxlength: 30 },
     avatarInitials: { type: String, required: true, trim: true, maxlength: 4 },
     role: { type: String, enum: ["student", "admin"], default: "student" },
+    passwordResetTokenHash: { type: String, default: null, select: false },
+    passwordResetExpiresAt: { type: Date, default: null },
     savedEventIds: { type: [String], default: [] },
     refreshTokens: { type: [refreshTokenSchema], default: [] },
   },

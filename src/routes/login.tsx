@@ -84,6 +84,16 @@ function LoginPage() {
             </Button>
           </form>
 
+          <div className="mt-4 text-right">
+            <Link
+              to="/forgot-password"
+              search={redirect ? { redirect } : undefined}
+              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
+
           <p className="mt-5 text-sm text-muted-foreground">
             New here?{" "}
             <Link

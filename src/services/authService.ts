@@ -16,7 +16,17 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
+}
+
 type AuthResponse = { user: StudentProfile };
+type MessageResponse = { message: string; resetToken?: string };
 
 export const authService = {
   async me() {
@@ -30,6 +40,18 @@ export const authService = {
   },
   async login(payload: LoginPayload) {
     return apiRequest<AuthResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  async forgotPassword(payload: ForgotPasswordPayload) {
+    return apiRequest<MessageResponse>("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  async resetPassword(payload: ResetPasswordPayload) {
+    return apiRequest<MessageResponse>("/auth/reset-password", {
       method: "POST",
       body: JSON.stringify(payload),
     });

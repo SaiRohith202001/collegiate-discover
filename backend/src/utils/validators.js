@@ -23,6 +23,21 @@ export const loginSchema = z.object({
   password: z.string().min(1).max(100),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: trimmed.email().max(320),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1).max(500),
+  password: z
+    .string()
+    .min(8, "Password should be at least 8 characters.")
+    .max(100)
+    .regex(/[A-Z]/, "Password must contain one uppercase letter.")
+    .regex(/[a-z]/, "Password must contain one lowercase letter.")
+    .regex(/[0-9]/, "Password must contain one number."),
+});
+
 export const registrationSchema = z.object({
   eventId: trimmed.min(1).max(100),
   fullName: trimmed.min(2).max(80),

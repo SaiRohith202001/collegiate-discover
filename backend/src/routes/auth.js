@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { User } from "../models/User.js";
@@ -12,7 +13,7 @@ import {
   signRefreshToken,
   verifyRefreshToken,
 } from "../utils/tokens.js";
-import { loginSchema, signupSchema } from "../utils/validators.js";
+import { forgotPasswordSchema, loginSchema, resetPasswordSchema, signupSchema } from "../utils/validators.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -47,6 +48,8 @@ const issueAuth = async (res, user) => {
 
   setAuthCookies(res, accessToken, refreshToken);
 };
+
+const createResetToken = () => crypto.randomBytes(32).toString("hex");
 
 router.post("/signup", async (req, res, next) => {
   try {
@@ -106,6 +109,75 @@ router.post("/login", async (req, res, next) => {
 
     await issueAuth(res, user);
     return res.status(200).json({ user: user.toPublicProfile() });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post("/forgot-password", async (req, res, next) => {
+  try {
+    const parsed = forgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: parsed.error.issues[0]?.message ?? "Invalid email address." });
+    }
+
+    const email = parsed.data.email.toLowerCase();
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(200).json({
+        message: "If an account exists for that email, a password reset link has been sent.",
+      });
+    }
+
+    const token = createResetToken();
+    user.passwordResetTokenHash = hashToken(token);
+    user.passwordResetExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    await user.save();
+
+    const resetLink = `${process.env.FRONTEND_URL ?? "http://localhost:8081"}/reset-password?token=${token}`;
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`Password reset link for ${email}: ${resetLink}`);
+    }
+
+    return res.status(200).json({
+      message: "If an account exists for that email, a password reset link has been sent.",
+      ...(process.env.NODE_ENV !== "production" ? { resetToken: token } : {}),
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post("/reset-password", async (req, res, next) => {
+  try {
+    const parsed = resetPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: parsed.error.issues[0]?.message ?? "Invalid password reset request." });
+    }
+
+    const { token, password } = parsed.data;
+    const user = await User.findOne({
+      passwordResetTokenHash: hashToken(token),
+      passwordResetExpiresAt: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Reset link is invalid or expired." });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    user.passwordHash = passwordHash;
+    user.passwordResetTokenHash = null;
+    user.passwordResetExpiresAt = null;
+    user.refreshTokens = [];
+    await user.save();
+
+    clearAuthCookies(res);
+    return res.status(200).json({ message: "Password updated successfully." });
   } catch (error) {
     return next(error);
   }
