@@ -1,6 +1,13 @@
 import { z } from "zod";
 
 const trimmed = z.string().trim();
+const phoneSchema = z.preprocess(
+  (value) => (typeof value === "string" ? value.trim().replace(/[\s()-]/g, "") : value),
+  z
+    .string()
+    .regex(/^(?:\+91)?\d{10}$/, "Phone number must be a 10-digit Indian number.")
+    .transform((phone) => phone.replace(/^\+91/, "")),
+);
 
 export const signupSchema = z.object({
   name: trimmed.min(2).max(80),
@@ -15,7 +22,7 @@ export const signupSchema = z.object({
   studentId: trimmed.min(2).max(30),
   department: trimmed.min(2).max(120),
   year: trimmed.min(1).max(40),
-  phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits."),
+  phone: phoneSchema,
 });
 
 export const loginSchema = z.object({
@@ -43,7 +50,7 @@ export const registrationSchema = z.object({
   fullName: trimmed.min(2).max(80),
   studentId: trimmed.min(2).max(30),
   email: trimmed.email().max(320),
-  phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits."),
+  phone: phoneSchema,
   department: trimmed.min(2).max(120),
   year: trimmed.min(1).max(40),
   teamName: trimmed.max(120).optional().or(z.literal("")),
